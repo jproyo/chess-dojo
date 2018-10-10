@@ -1,15 +1,10 @@
-package edu.jproyo.chess
+package edu.jproyo
+package chess
 
 import com.whitehatgaming.UserInputFile
+import algebra._
 
 package object program {
-
-  case class Position(column: Int, row: Int){
-    override def toString: String = s"${(column+'a').toChar}${8-row}"
-  }
-  case class Move(from: Position, to: Position){
-    override def toString: String = s"from:$from-to:$to"
-  }
 
   class Chess(fileName: String) {
 
