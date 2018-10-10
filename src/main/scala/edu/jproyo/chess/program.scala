@@ -19,6 +19,13 @@ package object program {
     def runMoves: List[Move] =
       next.fold(List.empty[Move])(_ :: runMoves)
 
+
+    def play: Unit = {
+      val board = Board()
+      val result = runMoves.foldLeft(Right(Move(Position(0,0), Position(0,0))).asInstanceOf[Either[InvalidMove, Move]])((_, m) => board.update(m))
+      println(result)
+    }
+
   }
 
 }

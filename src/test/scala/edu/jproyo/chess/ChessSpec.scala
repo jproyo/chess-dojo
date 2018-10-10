@@ -122,4 +122,11 @@ class ChessSpec extends FlatSpec with Matchers {
     board.get(Position(0,3)) shouldBe Some(Pawn(PlayerTwo))
   }
 
+
+  "Step 5" should "udpate board with invalid piece movement" in {
+    val board = Board()
+    val result = board.update(Move(Position(2,7), Position(2,5)))
+    result shouldBe Left(WrongMovementOfPiece)
+  }
+
 }
