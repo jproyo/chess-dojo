@@ -114,4 +114,12 @@ class ChessSpec extends FlatSpec with Matchers {
     board.get(Position(0,3)) shouldBe Some(Pawn(PlayerTwo))
   }
 
+
+  "Step 4" should "udpate board and print status" in {
+    val board = Board()
+    board.updateAndPrint(Move(Position(0,1), Position(0,3)))
+    board.get(Position(0,1)) shouldBe None
+    board.get(Position(0,3)) shouldBe Some(Pawn(PlayerTwo))
+  }
+
 }

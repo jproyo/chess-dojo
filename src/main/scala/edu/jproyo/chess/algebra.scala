@@ -13,7 +13,16 @@ package object algebra {
   case object PlayerOne extends Player
   case object PlayerTwo extends Player
 
-  sealed trait Piece { def player: Player }
+  sealed trait Piece {
+    def player: Player
+
+    override def toString: String =
+      player match {
+        case PlayerOne => getClass.getSimpleName
+        case PlayerTwo => getClass.getSimpleName.head.toLower + getClass.getSimpleName.tail
+      }
+  }
+
   case class Pawn(player: Player) extends Piece
   case class Knight(player: Player) extends Piece
   case class Bishop(player: Player) extends Piece
@@ -29,8 +38,20 @@ package object algebra {
 
     def get: Table = table
 
-    def update(move: Move): Unit =
-      table = table + (move.to  -> table(move.from)) + (move.from -> None)
+    def update: (Move) => Move = move => {
+      table = table + (move.to -> table(move.from)) + (move.from -> None)
+      move
+    }
+
+    def updateAndPrint: (Move) => Unit = update andThen printTable
+
+    def printTable: (Move) => Unit = _ => println(this)
+
+
+    override def toString: String =
+      get.map {
+        case (pos, piece) => s"Position: $pos - Piece: ${piece.fold("Empty")(_.toString)}}"
+      }.mkString("\n")
   }
 
   object Board{
