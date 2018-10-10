@@ -129,4 +129,10 @@ class ChessSpec extends FlatSpec with Matchers {
     result shouldBe Left(WrongMovementOfPiece)
   }
 
+  "Play moves" should "ok" in {
+    val sampleMoves = getClass.getClassLoader.getResource("data/sample-moves.txt")
+    val chess = new Chess(sampleMoves.getPath)
+    chess.play
+  }
+
 }

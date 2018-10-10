@@ -1,8 +1,10 @@
 package edu.jproyo
 package chess
 
+import cats.implicits._
+import cats.implicits.catsStdInstancesForEither
 import com.whitehatgaming.UserInputFile
-import algebra._
+import edu.jproyo.algebra._
 
 package object program {
 
@@ -19,10 +21,9 @@ package object program {
     def runMoves: List[Move] =
       next.fold(List.empty[Move])(_ :: runMoves)
 
-
     def play: Unit = {
       val board = Board()
-      val result = runMoves.foldLeft(Right(Move(Position(0,0), Position(0,0))).asInstanceOf[Either[InvalidMove, Move]])((_, m) => board.update(m))
+      val result = runMoves.traverse[Either[InvalidMove, ?], Move](board.update(_))
       println(result)
     }
 
