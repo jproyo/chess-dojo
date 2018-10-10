@@ -37,7 +37,7 @@ class ChessSpec extends FlatSpec with Matchers {
   }
 
   "Step 2" should "model board with positions and pieces and initialize" in {
-    val board = new Board
+    val board = Board()
     val expected = Map(
       Position(0,0) -> Some(Rook),
       Position(0,1) -> Some(Pawn),
@@ -104,6 +104,14 @@ class ChessSpec extends FlatSpec with Matchers {
       Position(7,6) -> Some(Pawn),
       Position(7,7) -> Some(Rook))
     board.get shouldBe expected
+  }
+
+
+  "Step 3" should "udpate board ignoring valids" in {
+    val board = Board()
+    board.update(Move(Position(0,1), Position(0,3)))
+    board.get(Position(0,1)) shouldBe None
+    board.get(Position(0,3)) shouldBe Some(Pawn)
   }
 
 }

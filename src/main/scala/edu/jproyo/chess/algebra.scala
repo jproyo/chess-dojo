@@ -19,11 +19,22 @@ package object algebra {
 
   type Table = Map[Position, Option[Piece]]
 
-  final class Board{
+  abstract class Board {
 
-    private lazy val board: Table = initialize
+    var table: Table
 
-    def get: Table = board
+    def get: Table = table
+
+    def update(move: Move): Unit =
+      table = table + (move.to  -> table(move.from)) + (move.from -> None)
+  }
+
+  object Board{
+
+    def apply(): Board =
+      new Board() {
+        var table: Table = initialize
+      }
 
     private def initialize: Table =
       (for {
