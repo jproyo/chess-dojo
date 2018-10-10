@@ -1,0 +1,8 @@
+.idea/
+bin/
+target/
+.cache*
+*.glue
+project/target
+project/project/target
+keys.store
