@@ -9,13 +9,17 @@ package object algebra {
     override def toString: String = s"from:$from-to:$to"
   }
 
-  sealed trait Piece
-  case object Pawn extends Piece
-  case object Knight extends Piece
-  case object Bishop extends Piece
-  case object Rook extends Piece
-  case object Queen extends Piece
-  case object King extends Piece
+  sealed trait Player
+  case object PlayerOne extends Player
+  case object PlayerTwo extends Player
+
+  sealed trait Piece { def player: Player }
+  case class Pawn(player: Player) extends Piece
+  case class Knight(player: Player) extends Piece
+  case class Bishop(player: Player) extends Piece
+  case class Rook(player: Player) extends Piece
+  case class Queen(player: Player) extends Piece
+  case class King(player: Player) extends Piece
 
   type Table = Map[Position, Option[Piece]]
 
@@ -44,21 +48,24 @@ package object algebra {
 
 
     private def calculatePiece(column: Int, row: Int): Option[Piece] =
-      if(row == 6 || row == 1) Some(Pawn)
-      else if(row == 0 || row == 7) edgePiece(column, row)
-      else None
+      row match {
+        case 0 => edgePiece(column, PlayerTwo)
+        case 1 => Some(Pawn(PlayerTwo))
+        case 6 => Some(Pawn(PlayerOne))
+        case 7 => edgePiece(column, PlayerOne)
+        case _ => None
+      }
 
-    private def edgePiece(column: Int, row: Int): Option[Piece] = {
-      if(column == row) Some(Rook)
-      else column match {
-        case 0 => Some(Rook)
-        case 1 => Some(Knight)
-        case 2 => Some(Bishop)
-        case 3 => Some(King)
-        case 4 => Some(Queen)
-        case 5 => Some(Bishop)
-        case 6 => Some(Knight)
-        case 7 => Some(Rook)
+    private def edgePiece(column: Int, player: Player): Option[Piece] = {
+      column match {
+        case 0 => Some(Rook(player))
+        case 1 => Some(Knight(player))
+        case 2 => Some(Bishop(player))
+        case 3 => Some(King(player))
+        case 4 => Some(Queen(player))
+        case 5 => Some(Bishop(player))
+        case 6 => Some(Knight(player))
+        case 7 => Some(Rook(player))
       }
     }
 
