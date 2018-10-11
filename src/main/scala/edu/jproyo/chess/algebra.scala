@@ -4,6 +4,8 @@ package object algebra {
 
   case class Position(column: Int, row: Int){
 
+    def isInside: Boolean = (0 to 7).contains(column) && (0 to 7).contains(row)
+
     def isDiag(another: Position): Boolean = {
       val fromP = Math.abs(row - column)
       val toP = Math.abs(another.row - another.column)
@@ -14,6 +16,9 @@ package object algebra {
   }
 
   case class Move(from: Position, to: Position){
+
+    def insideBoard: Boolean = from.isInside && to.isInside
+
     def isDiag: Boolean = from.isDiag(to)
 
     override def toString: String = s"from:$from-to:$to"
@@ -39,7 +44,7 @@ package object algebra {
   case class Queen(player: Player) extends Piece
   case class King(player: Player) extends Piece
 
-  type Table = Map[Position, Option[Piece]]
+  type Table = Map[Position, Piece]
 
   sealed trait InvalidMove
   case object OutofBoardMove extends InvalidMove
@@ -65,13 +70,9 @@ package object algebra {
   }
 
   implicit val chessValidator = new MoveValidator {
-    override def validOutOfBoard(table: Table, move: Move): Either[InvalidMove, Move] = {
-      val valid = for {
-        _  <- table.get(move.from)
-        to <- table.get(move.to)
-      } yield to
-      valid.fold(Left(OutofBoardMove))(_ => return Right(move))
-    }
+    override def validOutOfBoard(table: Table, move: Move): Either[InvalidMove, Move] =
+      if(move.insideBoard) Right(move) else Left(OutofBoardMove)
+
 
     def validMove(table: Table, move: Move, piece: Piece): Either[InvalidMove, Move] = piece match {
       case p@Pawn(_) => p.validMove(table, move)
@@ -83,7 +84,7 @@ package object algebra {
     }
 
     override def validWrongMovement(table: Table, move: Move): Either[InvalidMove, Move] =
-      table(move.from).fold(Left(NoPieceFoundInPosition))(piece => return validMove(table, move, piece))
+      table.get(move.from).fold(Left(NoPieceFoundInPosition))(piece => return validMove(table, move, piece))
 
     override def validPieceBlocked(table: Table, move: Move): Either[InvalidMove, Move] = Right(move)
   }
@@ -104,18 +105,17 @@ package object algebra {
         val toSq = Math.max(move.from.row, move.to.row)
         val result = for {
           i     <- fromSq to toSq
-          piece <- table(Position(move.from.column, i))
+          piece <- table.get(Position(move.from.column, i))
         } yield piece
         if(result.nonEmpty) return Left(WrongMovementOfPiece)
         else return Right(move)
       } else { Left(WrongMovementOfPiece) }
-
     }
   }
 
   implicit class RookRule(rook: Rook) extends MovePieceRule {
     override def validMove(table: Table, move: Move): Either[InvalidMove, Move] =
-      if(move.isDiag) return Right(move) else Left(WrongMovementOfPiece)
+      if(!move.isDiag) return Right(move) else Left(WrongMovementOfPiece)
   }
 
   implicit class KnightRule(knight: Knight) extends MovePieceRule {
@@ -142,8 +142,7 @@ package object algebra {
 
   implicit class BishopRule(bishop: Bishop) extends MovePieceRule {
     override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = {
-      if(move.from.column == move.to.column && move.from.row == move.from.row) Left(WrongMovementOfPiece)
-      else Right(move)
+      if(move.isDiag) Right(move) else Left(WrongMovementOfPiece)
     }
   }
 
@@ -164,7 +163,7 @@ package object algebra {
 
     def update(move: Move)(implicit validator: MoveValidator): Either[InvalidMove, Move] = {
       validator.valid(table, move).fold(Left(_), m => {
-        table = table + (m.to -> table(m.from)) + (m.from -> None)
+        table = table + (m.to -> table(m.from))  - m.from
         Right(m)
       })
     }
@@ -178,7 +177,7 @@ package object algebra {
 
     override def toString: String =
       get.map {
-        case (pos, piece) => s"Position: $pos - Piece: ${piece.fold("Empty")(_.toString)}}"
+        case (pos, piece) => s"Position: $pos - Piece: $piece"
       }.mkString("\n")
 
   }
@@ -194,28 +193,28 @@ package object algebra {
       (for {
         column <- 0 to 7
         row    <- 0 to 7
+        if !(2 to 5).contains(row)
       } yield (Position(column, row), calculatePiece(column, row))).toMap
 
 
-    private def calculatePiece(column: Int, row: Int): Option[Piece] =
+    private def calculatePiece(column: Int, row: Int): Piece =
       row match {
         case 0 => edgePiece(column, PlayerTwo)
-        case 1 => Some(Pawn(PlayerTwo))
-        case 6 => Some(Pawn(PlayerOne))
+        case 1 => Pawn(PlayerTwo)
+        case 6 => Pawn(PlayerOne)
         case 7 => edgePiece(column, PlayerOne)
-        case _ => None
       }
 
-    private def edgePiece(column: Int, player: Player): Option[Piece] = {
+    private def edgePiece(column: Int, player: Player): Piece = {
       column match {
-        case 0 => Some(Rook(player))
-        case 1 => Some(Knight(player))
-        case 2 => Some(Bishop(player))
-        case 3 => Some(King(player))
-        case 4 => Some(Queen(player))
-        case 5 => Some(Bishop(player))
-        case 6 => Some(Knight(player))
-        case 7 => Some(Rook(player))
+        case 0 => Rook(player)
+        case 1 => Knight(player)
+        case 2 => Bishop(player)
+        case 3 => King(player)
+        case 4 => Queen(player)
+        case 5 => Bishop(player)
+        case 6 => Knight(player)
+        case 7 => Rook(player)
       }
     }
 
