@@ -89,7 +89,7 @@ package object algebra {
       case Pawn(player) => {
         if(move.from.column != move.to.column) return Left(WrongMovementOfPiece)
         player match {
-          case PlayerOne => pawnRule(table, move)(6)(move.from.row + 1 to move.to.row by -1)
+          case PlayerOne => pawnRule(table, move)(6)(move.from.row - 1 to move.to.row by -1)
           case PlayerTwo => pawnRule(table, move)(1)(move.from.row + 1 to move.to.row)
         }
       }
