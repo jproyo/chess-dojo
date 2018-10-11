@@ -47,7 +47,7 @@ package object algebra {
   type Table = Map[Position, Piece]
 
   sealed trait InvalidMove
-  case object OutofBoardMove extends InvalidMove
+  case object OutOfBoardMove extends InvalidMove
   case object WrongMovementOfPiece extends InvalidMove
   case object NoPieceFoundInPosition extends InvalidMove
   case object PieceBlocked extends InvalidMove
@@ -71,20 +71,10 @@ package object algebra {
 
   implicit val chessValidator = new MoveValidator {
     override def validOutOfBoard(table: Table, move: Move): Either[InvalidMove, Move] =
-      if(move.insideBoard) Right(move) else Left(OutofBoardMove)
-
-
-    def validMove(table: Table, move: Move, piece: Piece): Either[InvalidMove, Move] = piece match {
-      case p@Pawn(_) => p.validMove(table, move)
-      case p@Knight(_) => p.validMove(table, move)
-      case p@Queen(_) => p.validMove(table, move)
-      case p@King(_) => p.validMove(table, move)
-      case p@Rook(_) => p.validMove(table, move)
-      case p@Bishop(_) => p.validMove(table, move)
-    }
+      if(move.insideBoard) Right(move) else Left(OutOfBoardMove)
 
     override def validWrongMovement(table: Table, move: Move): Either[InvalidMove, Move] =
-      table.get(move.from).fold(Left(NoPieceFoundInPosition))(piece => return validMove(table, move, piece))
+      table.get(move.from).fold(Left(NoPieceFoundInPosition))(piece => return piece.validMove(table, move))
 
     override def validPieceBlocked(table: Table, move: Move): Either[InvalidMove, Move] = Right(move)
   }
@@ -93,58 +83,44 @@ package object algebra {
     def validMove(table: Table, move: Move): Either[InvalidMove, Move]
   }
 
-  implicit class PawnRule(pawn: Pawn) extends MovePieceRule{
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = {
-      if(move.from.column != move.to.column) return Left(WrongMovementOfPiece)
-      val allowed = pawn.player match {
-        case PlayerOne => if (move.from.row == 6) 2 else 1
-        case PlayerTwo => if (move.from.row == 1) 2 else 1
+
+  implicit class PieceRules[A <: Piece](piece: A) extends MovePieceRule {
+    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = piece match {
+      case Pawn(player) => {
+        if(move.from.column != move.to.column) return Left(WrongMovementOfPiece)
+        val allowed = player match {
+          case PlayerOne => if (move.from.row == 6) 2 else 1
+          case PlayerTwo => if (move.from.row == 1) 2 else 1
+        }
+        if(Math.abs(move.from.row - move.to.row) <= allowed){
+          val fromSq = Math.min(move.from.row, move.to.row) + 1
+          val toSq = Math.max(move.from.row, move.to.row)
+          val result = for {
+            i     <- fromSq to toSq
+            piece <- table.get(Position(move.from.column, i))
+          } yield piece
+          if(result.nonEmpty) return Left(WrongMovementOfPiece)
+          else return Right(move)
+        } else { Left(WrongMovementOfPiece) }
       }
-      if(Math.abs(move.from.row - move.to.row) <= allowed){
-        val fromSq = Math.min(move.from.row, move.to.row) + 1
-        val toSq = Math.max(move.from.row, move.to.row)
-        val result = for {
-          i     <- fromSq to toSq
-          piece <- table.get(Position(move.from.column, i))
-        } yield piece
-        if(result.nonEmpty) return Left(WrongMovementOfPiece)
-        else return Right(move)
-      } else { Left(WrongMovementOfPiece) }
+      case Knight(_) => {
+        val cond = move.from.column != move.to.column &&
+          move.from.row != move.to.row &&
+          !move.isDiag
+        if(cond) Right(move) else Left(WrongMovementOfPiece)
+      }
+      case Queen(_) => Right(move)
+      case King(_) => {
+        val row = Math.abs(move.from.row - move.to.row)
+        val col = Math.abs(move.from.column - move.to.column)
+        if(row <= 1 && col <= 1) Right(move)
+        else Left(WrongMovementOfPiece)
+      }
+      case Rook(_) => if(!move.isDiag) return Right(move) else Left(WrongMovementOfPiece)
+      case Bishop(_) => if(move.isDiag) Right(move) else Left(WrongMovementOfPiece)
     }
   }
 
-  implicit class RookRule(rook: Rook) extends MovePieceRule {
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] =
-      if(!move.isDiag) return Right(move) else Left(WrongMovementOfPiece)
-  }
-
-  implicit class KnightRule(knight: Knight) extends MovePieceRule {
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = {
-      val cond = move.from.column != move.to.column &&
-                 move.from.row != move.to.row &&
-                 !move.isDiag
-      if(cond) Right(move) else Left(WrongMovementOfPiece)
-    }
-  }
-
-  implicit class KingRule(king: King) extends MovePieceRule {
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = {
-      val row = Math.abs(move.from.row - move.to.row)
-      val col = Math.abs(move.from.column - move.to.column)
-      if(row <= 1 && col <= 1) Right(move)
-      else Left(WrongMovementOfPiece)
-    }
-  }
-
-  implicit class QueenRule(queen: Queen) extends MovePieceRule {
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = Right(move)
-  }
-
-  implicit class BishopRule(bishop: Bishop) extends MovePieceRule {
-    override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = {
-      if(move.isDiag) Right(move) else Left(WrongMovementOfPiece)
-    }
-  }
 
 
   sealed trait Result
@@ -168,7 +144,7 @@ package object algebra {
       })
     }
 
-    def updateAndPrint(move: Move)(implicit validator: MoveValidator): Unit =
+    def updateAndPrint(move: Move): Unit =
       printTable(update(move))
 
 
