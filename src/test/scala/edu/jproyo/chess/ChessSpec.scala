@@ -100,7 +100,21 @@ class ChessSpec extends FlatSpec with Matchers {
   "Play moves" should "ok" in {
     val sampleMoves = getClass.getClassLoader.getResource("data/sample-moves.txt")
     val chess = new Chess(sampleMoves.getPath)
-    chess.play
+    val expected = Right(List(
+      Move(Position(4,6),Position(4,4)),
+      Move(Position(4,1),Position(4,3)),
+      Move(Position(1,7),Position(2,5)),
+      Move(Position(3,1),Position(3,2)),
+      Move(Position(7,6),Position(7,5)),
+      Move(Position(2,0),Position(4,2)),
+      Move(Position(7,7),Position(7,6))))
+    chess.play shouldBe expected
+  }
+
+  "Play moves" should "invalid" in {
+    val sampleMoves = getClass.getClassLoader.getResource("data/sample-moves-invalid.txt")
+    val chess = new Chess(sampleMoves.getPath)
+    chess.play shouldBe Left(WrongMovementOfPiece)
   }
 
 }

@@ -21,10 +21,9 @@ package object program {
     def runMoves: List[Move] =
       next.fold(List.empty[Move])(_ :: runMoves)
 
-    def play: Unit = {
+    def play: Either[InvalidMove, List[Move]] = {
       val board = Board()
-      val result = runMoves.traverse[Either[InvalidMove, ?], Move](board.update(_))
-      println(result)
+      runMoves.traverse[Either[InvalidMove, ?], Move](board.update(_))
     }
 
   }
