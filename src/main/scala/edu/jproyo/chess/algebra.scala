@@ -88,20 +88,10 @@ package object algebra {
     override def validMove(table: Table, move: Move): Either[InvalidMove, Move] = piece match {
       case Pawn(player) => {
         if(move.from.column != move.to.column) return Left(WrongMovementOfPiece)
-        val allowed = player match {
-          case PlayerOne => if (move.from.row == 6) 2 else 1
-          case PlayerTwo => if (move.from.row == 1) 2 else 1
+        player match {
+          case PlayerOne => pawnRule(table, move)(6)(move.from.row + 1 to move.to.row by -1)
+          case PlayerTwo => pawnRule(table, move)(1)(move.from.row + 1 to move.to.row)
         }
-        if(Math.abs(move.from.row - move.to.row) <= allowed){
-          val fromSq = Math.min(move.from.row, move.to.row) + 1
-          val toSq = Math.max(move.from.row, move.to.row)
-          val result = for {
-            i     <- fromSq to toSq
-            piece <- table.get(Position(move.from.column, i))
-          } yield piece
-          if(result.nonEmpty) return Left(WrongMovementOfPiece)
-          else return Right(move)
-        } else { Left(WrongMovementOfPiece) }
       }
       case Knight(_) => {
         val cond = move.from.column != move.to.column &&
@@ -118,6 +108,19 @@ package object algebra {
       }
       case Rook(_) => if(!move.isDiag) return Right(move) else Left(WrongMovementOfPiece)
       case Bishop(_) => if(move.isDiag) Right(move) else Left(WrongMovementOfPiece)
+    }
+
+    private def pawnRule(table: Table, move: Move)(allowedRow: Int = 6)(moveRange: => Range): Either[InvalidMove, Move] = {
+      val allowed = if (move.from.row == allowedRow) 2 else 1
+      if (Math.abs(move.from.row - move.to.row) > allowed) Left(WrongMovementOfPiece)
+      else {
+        val result = for {
+          i <- moveRange
+          piece <- table.get(Position(move.from.column, i))
+        } yield piece
+        if (result.nonEmpty) Left(WrongMovementOfPiece)
+        else Right(move)
+      }
     }
   }
 
